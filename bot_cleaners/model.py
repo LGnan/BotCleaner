@@ -16,6 +16,10 @@ class Celda(Agent):
 class Mueble(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
+        
+class EstacionCarga(Agent):
+    def __init__(self, unique_id, model):
+        super().__init__(unique_id, model)
 
 
 class RobotLimpieza(Agent):
@@ -90,6 +94,10 @@ class Habitacion(Model):
         num_muebles = int(M * N * porc_muebles)
         posiciones_muebles = self.random.sample(posiciones_disponibles, k=num_muebles)
 
+        # Posicionamiento de Estaciones de Carga
+        num_estacionCarga = 4
+        #posiciones_estaciones = self.
+        
         for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
             self.grid.place_agent(mueble, pos)
