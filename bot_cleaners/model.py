@@ -78,11 +78,13 @@ class Habitacion(Model):
                  porc_celdas_sucias: float = 0.6,
                  porc_muebles: float = 0.1,
                  modo_pos_inicial: str = 'Fija',
+                 estacion_carga: int = 4
                  ):
 
         self.num_agentes = num_agentes
         self.porc_celdas_sucias = porc_celdas_sucias
         self.porc_muebles = porc_muebles
+        self.estacion_carga = estacion_carga
 
         self.grid = MultiGrid(M, N, False)
         self.schedule = SimultaneousActivation(self)
@@ -95,7 +97,7 @@ class Habitacion(Model):
 
         # Posicionamiento de Estaciones de Carga
         num_estacionCarga = 4
-        posiciones_estaciones = self.
+        posiciones_estaciones = self.sample(posiciones_disponibles, c=num_estacionCarga)
         
         for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
