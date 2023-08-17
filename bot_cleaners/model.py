@@ -97,7 +97,7 @@ class Habitacion(Model):
 
         # Posicionamiento de Estaciones de Carga
         num_estacionCarga = 4
-        posiciones_estaciones = [(1, 1)] + [(0,0)] + [(0,0)] + [(0,0)]
+        posiciones_estaciones = [(5, 5)] + [(5,15)] + [(15,5)] + [(15,15)]
         
         for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
@@ -107,7 +107,6 @@ class Habitacion(Model):
         for id, pos in enumerate(posiciones_estaciones):
             estacion = EstacionCarga(int(f"{num_agentes}0{id}") + 1, self)
             self.grid.place_agent(estacion, pos)
-            #posiciones_disponibles.remove(pos)
 
         # Posicionamiento de celdas sucias
         self.num_celdas_sucias = int(M * N * porc_celdas_sucias)

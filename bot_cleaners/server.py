@@ -13,7 +13,7 @@ def agent_portrayal(agent):
         return {"Shape": "rect", "Filled": "true", "Color": "black", "Layer": 0,
                 "w": 0.9, "h": 0.9}
     elif isinstance(agent, EstacionCarga):
-        return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 0,
+        return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 1,
                 "w": 0.9, "h": 0.9}
     elif isinstance(agent, Celda):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
@@ -27,7 +27,7 @@ def agent_portrayal(agent):
 
 
 grid = mesa.visualization.CanvasGrid(
-    agent_portrayal, 20, 20, 400, 400)
+    agent_portrayal, 21, 21, 420, 420)
 chart_celdas = mesa.visualization.ChartModule(
     [{"Label": "CeldasSucias", "Color": '#36A2EB', "label": "Celdas Sucias"}],
     50, 200,
@@ -65,11 +65,11 @@ model_params = {
         ["Fija", "Aleatoria"],
         "Seleciona la forma se posicionan los robots"
     ),
-    "M": 20,
-    "N": 20,
+    "M": 21,
+    "N": 21,
 }
 
 server = mesa.visualization.ModularServer(
     Habitacion, [grid, chart_celdas],
-    "botCleaner", model_params, 8521
+    "botCleaner", model_params, 9000
 )
