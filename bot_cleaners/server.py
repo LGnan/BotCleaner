@@ -13,7 +13,7 @@ def agent_portrayal(agent):
         return {"Shape": "rect", "Filled": "true", "Color": "black", "Layer": 0,
                 "w": 0.9, "h": 0.9}
     elif isinstance(agent, EstacionCarga):
-        return {"Shape": "rect", "Filled": "true", "Color": "yellow", "Layer": 1,
+        return {"Shape": "rect","text": "🔋", "Filled": "true", "Color": "green", "Layer": 1,
                 "w": 0.9, "h": 0.9}
     elif isinstance(agent, Celda):
         portrayal = {"Shape": "rect", "Filled": "true", "Layer": 0, "w": 0.9, "h": 0.9, "text_color": "Black"}
@@ -71,5 +71,5 @@ model_params = {
 
 server = mesa.visualization.ModularServer(
     Habitacion, [grid, chart_celdas],
-    "botCleaner", model_params, 9000
+    "botCleaner", model_params, 9002
 )
