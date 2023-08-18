@@ -3,6 +3,7 @@ from mesa.agent import Agent
 from mesa.space import MultiGrid
 from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
+import math
 
 import numpy as np
 
@@ -19,7 +20,7 @@ class Mueble(Agent):
         
 class EstacionCarga(Agent):
     def __init__(self, unique_id, model):
-        super().__init__(unique_id, model)
+        super().__init__(unique_id, model)  
 
 class RobotLimpieza(Agent):
     def __init__(self, unique_id, model):
@@ -36,8 +37,25 @@ class RobotLimpieza(Agent):
     def seleccionar_nueva_pos(self, lista_de_vecinos):
         self.sig_pos = self.random.choice(lista_de_vecinos).pos
         
-    def cargar_robot(self, )
-
+    def cargar_robot(self, lista_de_vecinos):
+        self.carga = self.carga + 25
+    
+    @staticmethod
+    def buscar_celdas_sucia(lista_de_vecinos):
+        posiciones_estaciones = [(5, 5), (5,15), (15,5), (15,15)]
+        # (1,3) slope de 1/2
+        compaDist = []
+        x,y = Agent.self.pos
+        for estacion in posiciones_estaciones:
+            x2, y2 = estacion
+            distancia = (y - y2) / (x - x2)
+            compaDist.append(distancia)
+        compaDist.sort()
+        cercana = compaDist[0]
+        for estacion in posiciones_estaciones:
+            if Agent.self.pos != estacion:
+                Agent.self.pos += cercana
+        
     @staticmethod
     def buscar_celdas_sucia(lista_de_vecinos):
         # #Opción 1
@@ -64,6 +82,8 @@ class RobotLimpieza(Agent):
             self.seleccionar_nueva_pos(vecinos)
         else:
             self.limpiar_una_celda(celdas_sucias)
+        if self.carga < 25:
+            self.cargar_robot()
 
     def advance(self):
         if self.pos != self.sig_pos:
