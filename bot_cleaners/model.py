@@ -3,8 +3,7 @@ from mesa.agent import Agent
 from mesa.space import MultiGrid
 from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
-import math
-
+from fractions import Fraction
 import numpy as np
 
 
@@ -37,24 +36,38 @@ class RobotLimpieza(Agent):
     def seleccionar_nueva_pos(self, lista_de_vecinos):
         self.sig_pos = self.random.choice(lista_de_vecinos).pos
         
-    def cargar_robot(self, lista_de_vecinos):
-        self.carga = self.carga + 25
-    
-    @staticmethod
-    def buscar_celdas_sucia(lista_de_vecinos):
-        posiciones_estaciones = [(5, 5), (5,15), (15,5), (15,15)]
-        # (1,3) slope de 1/2
-        compaDist = []
-        x,y = Agent.self.pos
+    def cargar_robot(self, cercana, posiciones_estaciones):
+        rise, run = cercana
+        x, y = self.pos
         for estacion in posiciones_estaciones:
             x2, y2 = estacion
-            distancia = (y - y2) / (x - x2)
-            compaDist.append(distancia)
+            
+            print(x, y)
+            if x != x2:
+                x += run
+            if y != y2:
+                y += rise
+            if x == x2 and y == y2:
+                self.carga = self.carga + 25
+        
+    
+    def buscar_estacion(self, posiciones_estaciones):
+        compaDist = []
+        x,y = self.pos
+        for estacion in posiciones_estaciones:
+            x2, y2 = estacion
+            if x != x2:
+                distancia = (y - y2) / (x - x2)
+                compaDist.append(distancia)
+            else:
+                compaDist.append(y)
+                
         compaDist.sort()
         cercana = compaDist[0]
-        for estacion in posiciones_estaciones:
-            if Agent.self.pos != estacion:
-                Agent.self.pos += cercana
+        fraction = Fraction(cercana)
+        rise, run = fraction.numerator, fraction.denominator
+        return rise, run
+       
         
     @staticmethod
     def buscar_celdas_sucia(lista_de_vecinos):
@@ -77,17 +90,23 @@ class RobotLimpieza(Agent):
                 vecinos.remove(vecino)
 
         celdas_sucias = self.buscar_celdas_sucia(vecinos)
-
+        
         if len(celdas_sucias) == 0:
             self.seleccionar_nueva_pos(vecinos)
         else:
             self.limpiar_una_celda(celdas_sucias)
-        if self.carga < 25:
-            self.cargar_robot()
+        
+        
+        
 
     def advance(self):
         if self.pos != self.sig_pos:
             self.movimientos += 1
+            
+        posiciones_estaciones = [(5, 5), (5,15), (15,5), (15,15)]
+        if self.carga < 25:
+            estacion_cercana = self.buscar_estacion(posiciones_estaciones)    
+            self.cargar_robot(estacion_cercana, posiciones_estaciones)
 
         if self.carga > 0:
             self.carga -= 1
@@ -119,7 +138,7 @@ class Habitacion(Model):
 
         # Posicionamiento de Estaciones de Carga
         num_estacionCarga = 4
-        posiciones_estaciones = [(5, 5)] + [(5,15)] + [(15,5)] + [(15,15)]
+        posiciones_estaciones = [(5, 5), (5,15), (15,5), (15,15)]
         
         for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
