@@ -4,15 +4,14 @@ from mesa.space import MultiGrid
 from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
 from fractions import Fraction
+import math
 import numpy as np
-
 
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
         super().__init__(unique_id, model)
         self.sucia = suciedad
-
-
+        
 class Mueble(Agent):
     def __init__(self, unique_id, model):
         super().__init__(unique_id, model)
@@ -37,37 +36,38 @@ class RobotLimpieza(Agent):
         self.sig_pos = self.random.choice(lista_de_vecinos).pos
         
     def cargar_robot(self, cercana, posiciones_estaciones):
-        rise, run = cercana
+        rise, run, n = cercana
         x, y = self.pos
-        for estacion in posiciones_estaciones:
-            x2, y2 = estacion
-            
-            print(x, y)
-            if x != x2:
-                x += run
-            if y != y2:
-                y += rise
-            if x == x2 and y == y2:
-                self.carga = self.carga + 25
+        x2, y2 = posiciones_estaciones[n]
         
-    
+        print(x, y, " pene ", x2, y2)
+        if x != x2:
+            for act_run in range(run):
+                x += act_run
+                
+        if y != y2:
+            for act_rise in range(rise):
+                y += act_rise
+        self.sig_pos = x, y
+        if x == x2 and y == y2:
+            print("metido a ambos")
+            self.carga = self.carga + 25
+            
     def buscar_estacion(self, posiciones_estaciones):
         compaDist = []
         x,y = self.pos
+        i = 0
         for estacion in posiciones_estaciones:
-            x2, y2 = estacion
-            if x != x2:
-                distancia = (y - y2) / (x - x2)
-                compaDist.append(distancia)
-            else:
-                compaDist.append(y)
-                
+            x2,y2 = estacion
+            distancia = math.sqrt((x2 - x)**2 + (y2 - y)**2)
+            compaDist.append((abs(distancia),i))
+            i += 1
         compaDist.sort()
-        cercana = compaDist[0]
-        fraction = Fraction(cercana)
-        rise, run = fraction.numerator, fraction.denominator
-        return rise, run
-       
+        dist, n = compaDist[0]
+        x2,y2 = posiciones_estaciones[n]
+        run = (x2 - x)
+        rise = (y2 - y)
+        return rise, run, n       
         
     @staticmethod
     def buscar_celdas_sucia(lista_de_vecinos):
@@ -88,7 +88,7 @@ class RobotLimpieza(Agent):
         for vecino in vecinos:
             if isinstance(vecino, (Mueble, RobotLimpieza)):
                 vecinos.remove(vecino)
-
+                 
         celdas_sucias = self.buscar_celdas_sucia(vecinos)
         
         if len(celdas_sucias) == 0:
@@ -96,21 +96,20 @@ class RobotLimpieza(Agent):
         else:
             self.limpiar_una_celda(celdas_sucias)
         
-        
-        
-
     def advance(self):
         if self.pos != self.sig_pos:
             self.movimientos += 1
             
         posiciones_estaciones = [(5, 5), (5,15), (15,5), (15,15)]
-        if self.carga < 25:
-            estacion_cercana = self.buscar_estacion(posiciones_estaciones)    
-            self.cargar_robot(estacion_cercana, posiciones_estaciones)
-
+        
         if self.carga > 0:
             self.carga -= 1
+            if self.carga < 25:
+                estacion_cercana = self.buscar_estacion(posiciones_estaciones)    
+                self.cargar_robot(estacion_cercana, posiciones_estaciones)
+                self.model.grid.move_agent(self, self.sig_pos)
             self.model.grid.move_agent(self, self.sig_pos)
+            
 
 
 class Habitacion(Model):
