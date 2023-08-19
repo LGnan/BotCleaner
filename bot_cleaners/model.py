@@ -26,6 +26,7 @@ class RobotLimpieza(Agent):
         self.sig_pos = None
         self.movimientos = 0
         self.carga = 100
+        self.cargando = False
 
     def limpiar_una_celda(self, lista_de_celdas_sucias):
         celda_a_limpiar = self.random.choice(lista_de_celdas_sucias)
@@ -52,7 +53,9 @@ class RobotLimpieza(Agent):
 
         self.sig_pos = x, y
         if x == x2 and y == y2:
+            self.cargando = True
             self.carga = self.carga + 25
+
 
 
             
@@ -110,7 +113,9 @@ class RobotLimpieza(Agent):
             if self.carga < 25:
                 estacion_cercana = self.buscar_estacion(posiciones_estaciones)    
                 self.cargar_robot(estacion_cercana, posiciones_estaciones)
-                self.model.grid.move_agent(self, self.sig_pos)
+                if not self.cargando or self.carga > 75:
+                    self.model.grid.move_agent(self, self.sig_pos)
+                    self.cargando = False
             self.model.grid.move_agent(self, self.sig_pos)
             
 
