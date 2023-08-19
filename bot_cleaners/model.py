@@ -39,19 +39,22 @@ class RobotLimpieza(Agent):
         rise, run, n = cercana
         x, y = self.pos
         x2, y2 = posiciones_estaciones[n]
-        
-        print(x, y, " pene ", x2, y2)
-        if x != x2:
-            for act_run in range(run):
-                x += act_run
-                
-        if y != y2:
-            for act_rise in range(rise):
-                y += act_rise
+
+        if x < x2:
+            x += 1
+        elif x > x2:
+            x -= 1
+
+        if y < y2:
+            y += 1
+        elif y > y2:
+            y -= 1
+
         self.sig_pos = x, y
         if x == x2 and y == y2:
-            print("metido a ambos")
             self.carga = self.carga + 25
+
+
             
     def buscar_estacion(self, posiciones_estaciones):
         compaDist = []
