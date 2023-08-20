@@ -66,6 +66,9 @@ class RobotLimpieza(Agent):
                     self.cargando = True
                     self.carga += 25
                     estacion.ocupada = True
+                if self.carga >= 75:
+                    self.cargando = False
+                    estacion.ocupada = False
 
     def buscar_estacion(self, posiciones_estaciones):
         compaDist = []
@@ -85,10 +88,6 @@ class RobotLimpieza(Agent):
 
     @staticmethod
     def buscar_celdas_sucia(lista_de_vecinos):
-        # #Opción 1
-        # return [vecino for vecino in lista_de_vecinos
-        #                 if isinstance(vecino, Celda) and vecino.sucia]
-        # #Opción 2
         celdas_sucias = list()
         for vecino in lista_de_vecinos:
             if isinstance(vecino, Celda) and vecino.sucia:
@@ -115,21 +114,32 @@ class RobotLimpieza(Agent):
     def advance(self):
         if self.pos != self.sig_pos:
             self.movimientos += 1
+            if self.carga > 0:
+                self.carga -= 1
+            else:
+                print ("Tilin")
+                # No se mueve
+            # Profe lo cambie aca porque se me parecion raro que se quedaran sin carga y sin siquiera jalar xd (jalar me refiero a moverse)
 
         posiciones_estaciones = [(5, 5), (5, 15), (15, 5), (15, 15)]
-
-        if self.carga > 0:
-            self.carga -= 1
-            if self.carga < 25:
-                estacion_cercana = self.buscar_estacion(posiciones_estaciones)
-                self.cargar_robot(estacion_cercana, posiciones_estaciones)
-                if (
-                    not self.cargando or self.carga > 70
-                ):  # only move if not at charging station or charge is over 80%
-                    self.model.grid.move_agent(self, self.sig_pos)
+        if self.carga < 25:
+            estacion_cercana = self.buscar_estacion(posiciones_estaciones)
+            self.cargar_robot(estacion_cercana, posiciones_estaciones)
+            if self.cargando:
+                self.carga += 25
+                while self.carga >= 75:
+                    self.movimeintos += 1
+                    self.cargando = False
                     estacion = self.model.grid.get_cell_list_contents([self.pos])[0]
                     estacion.ocupada = False
-                    self.cargando = False
+                    self.model.grid.move_agent(self, self.sig_pos)
+            else:
+                self.model.grid.move_agent(self, self.sig_pos)
+                # if not self.cargando or self.carga > 70:
+                #     self.model.grid.move_agent(self, self.sig_pos)
+                #     estacion = self.model.grid.get_cell_list_contents([self.pos])[0]
+                #     estacion.ocupada = False
+                #     self.cargando = False
 
 
 class Habitacion(Model):
