@@ -3,10 +3,8 @@ from mesa.agent import Agent
 from mesa.space import MultiGrid
 from mesa.time import SimultaneousActivation
 from mesa.datacollection import DataCollector
-from fractions import Fraction
 import math
 import numpy as np
-
 
 class Celda(Agent):
     def __init__(self, unique_id, model, suciedad: bool = False):
@@ -32,13 +30,10 @@ class RobotLimpieza(Agent):
         self.carga = 100
         self.cargando = False
 
-    def limpiar_una_celda(self, lista_de_celdas_sucias):
-        celda_a_limpiar = self.random.choice(lista_de_celdas_sucias)
+    def limpiar_una_celda(self, sucio_cercano):
+        celda_a_limpiar = self.random.choice(sucio_cercano)
         celda_a_limpiar.sucia = False
         self.sig_pos = celda_a_limpiar.pos
-
-    def seleccionar_nueva_pos(self, lista_de_vecinos):
-        self.sig_pos = self.random.choice(lista_de_vecinos).pos
 
     def cargar_robot(self, cercana, posiciones_estaciones):
         rise, run, n = cercana
@@ -65,9 +60,6 @@ class RobotLimpieza(Agent):
                 self.carga = 100
                 # self.model.grid.move_agent(self, self.sig_pos)
 
-                
-                
-
     def buscar_estacion(self, posiciones_estaciones):
         compaDist = []
         x, y = self.pos
@@ -83,13 +75,43 @@ class RobotLimpieza(Agent):
         run = x2 - x
         rise = y2 - y
         return rise, run, n
+    
+    def ir_a_sucio(self, sucio_cercano, vecinos_sucios):
+        rise, run, n = sucio_cercano
+        x, y = self.pos
+        x2, y2 = vecinos_sucios[n]
+        if x < x2:
+            x += 1
+        elif x > x2:
+            x -= 1
 
+        if y < y2:
+            y += 1
+        elif y > y2:
+            y -= 1
+        self.sig_pos = x, y
+
+    def buscar_sucio_cercano(self, vecinos_sucios):
+        if not vecinos_sucios:  # Si no hay celdas sucias disponibles
+            return 0, 0, 0  # O algún valor que indique que no hay celdas sucias
+        suciaDist = []
+        x, y = self.pos
+        i = 0
+        for sucio in vecinos_sucios:
+            x2, y2 = sucio
+            distancia = math.sqrt((x2 - x) ** 2 + (y2 - y) ** 2)
+            suciaDist.append((abs(distancia), i))
+            i += 1
+        suciaDist.sort()
+        dist, n = suciaDist[0]
+        x2, y2 = vecinos_sucios[n]
+        run = x - x2
+        rise = y - y2
+        return rise, run, n
+
+    
     @staticmethod
     def buscar_celdas_sucia(lista_de_vecinos):
-        # #Opción 1
-        # return [vecino for vecino in lista_de_vecinos
-        #                 if isinstance(vecino, Celda) and vecino.sucia]
-        # #Opción 2
         celdas_sucias = list()
         for vecino in lista_de_vecinos:
             if isinstance(vecino, Celda) and vecino.sucia:
@@ -104,13 +126,26 @@ class RobotLimpieza(Agent):
         for vecino in vecinos:
             if isinstance(vecino, (Mueble, RobotLimpieza)):
                 vecinos.remove(vecino)
+                
+        celdas_sucias = self.buscar_celdas_sucia(vecinos)                
 
-        celdas_sucias = self.buscar_celdas_sucia(vecinos)
+
+        posiciones_estaciones = [(5, 5), (5, 15), (15, 5), (15, 15)]
 
         if len(celdas_sucias) == 0:
-            self.seleccionar_nueva_pos(vecinos)
+            vecinos_sucios = [agent.pos for agent in self.model.schedule.agents if isinstance(agent, Celda) and agent.sucia]
+            print(vecinos_sucios)
+            if(len(vecinos_sucios) != 0):
+                sucio_cercano = self.buscar_sucio_cercano(vecinos_sucios)
+                self.ir_a_sucio(sucio_cercano, vecinos_sucios)
+            else:
+                estacion_cercana = self.buscar_estacion(posiciones_estaciones)
+                self.cargar_robot(estacion_cercana, posiciones_estaciones)
+                
         else:
             self.limpiar_una_celda(celdas_sucias)
+        
+        
 
     def advance(self):
         if self.pos != self.sig_pos:
@@ -123,9 +158,7 @@ class RobotLimpieza(Agent):
             if self.carga < 25 or self.cargando == True:
                 estacion_cercana = self.buscar_estacion(posiciones_estaciones)
                 self.cargar_robot(estacion_cercana, posiciones_estaciones)
-                self.model.grid.move_agent(self, self.sig_pos)
                 if self.cargando == True and self.carga < 100:
-                    print("aqui")
                     # self.cargar_robot(estacion_cercana, posiciones_estaciones)
                     self.model.grid.move_agent(self, self.pos)
                 elif self.carga > 75:
@@ -163,15 +196,16 @@ class Habitacion(Model):
         # Posicionamiento de muebles
         num_muebles = int(M * N * porc_muebles)
         posiciones_muebles = self.random.sample(posiciones_disponibles, k=num_muebles)
-
-        # Posicionamiento de Estaciones de Carga
-        num_estacionCarga = 4
-        posiciones_estaciones = [(5, 5), (5, 15), (15, 5), (15, 15)]
-
+        
         for id, pos in enumerate(posiciones_muebles):
             mueble = Mueble(int(f"{num_agentes}0{id}") + 1, self)
             self.grid.place_agent(mueble, pos)
             posiciones_disponibles.remove(pos)
+
+        # Posicionamiento de Estaciones de Carga
+        posiciones_estaciones = [(5, 5), (5, 15), (15, 5), (15, 15)]
+
+       
 
         for id, pos in enumerate(posiciones_estaciones):
             estacion = EstacionCarga(int(f"{num_agentes}0{id}") + 1, self)
@@ -179,13 +213,14 @@ class Habitacion(Model):
 
         # Posicionamiento de celdas sucias
         self.num_celdas_sucias = int(M * N * porc_celdas_sucias)
-        posiciones_celdas_sucias = self.random.sample(
+        self.posiciones_celdas_sucias = self.random.sample(
             posiciones_disponibles, k=self.num_celdas_sucias
         )
 
         for id, pos in enumerate(posiciones_disponibles):
-            suciedad = pos in posiciones_celdas_sucias
+            suciedad = pos in self.posiciones_celdas_sucias
             celda = Celda(int(f"{num_agentes}{id}") + 1, self, suciedad)
+            self.schedule.add(celda)
             self.grid.place_agent(celda, pos)
 
         # Posicionamiento de agentes robot
@@ -241,7 +276,12 @@ def get_grid(model: Model) -> np.ndarray:
 
 
 def get_cargas(model: Model):
-    return [(agent.unique_id, agent.carga) for agent in model.schedule.agents]
+    return [
+        (agent.unique_id, agent.carga)
+        for agent in model.schedule.agents
+        if isinstance(agent, RobotLimpieza)
+    ]
+
 
 
 def get_sucias(model: Model) -> int:
