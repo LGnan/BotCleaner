@@ -61,12 +61,9 @@ class RobotLimpieza(Agent):
             if self.carga <= 75:
                 self.carga += 25
                 # self.model.grid.move_agent(self, self.pos)
-            elif self.carga > 75 or self.carga <=100 :
+            elif self.carga > 75 or self.carga <= 100:
                 self.carga = 100
                 # self.model.grid.move_agent(self, self.sig_pos)
-
-                
-                
 
     def buscar_estacion(self, posiciones_estaciones):
         compaDist = []
